@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Localização</title>
+  <link rel="stylesheet" href="../CSS/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Cadastro de Localização</h1>
+    <a href="home.html" style="color:#fff;text-decoration:underline;">← Home</a>
+  </header>
+
+  <section>
+    <h2>Cadastrar / Editar Localização</h2>
+    <form id="local-form">
+      <input type="hidden" id="local-id">
+      <label for="local-nome">Nome:</label>
+      <input id="local-nome" required>
+      <label for="local-desc">Descrição:</label>
+      <input id="local-desc">
+      <button type="submit">Cadastrar</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Lista de Localizações</h2>
+    <ul id="local-list"></ul>
+  </section>
+
+  <div id="popup" class="popup">
+    <div class="popup-content">
+      <p>Tem certeza que deseja excluir?</p>
+      <button id="confirm-delete">Sim</button>
+      <button id="cancel-delete">Não</button>
+    </div>
+  </div>
+
+  <script src="../js/localizacao.js"></script>
+</body>
+</html>

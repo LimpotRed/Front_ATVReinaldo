@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerência de Patrimônio</title>
+  <link rel="stylesheet" href="../CSS/styles.css">
+</head>
+<body>
+<header>
+  <h1>Gerência de Patrimônio</h1>
+  <a href="home.html" style="color:#fff;text-decoration:underline;">← Home</a>
+</header>
+
+<section>
+  <h2>Categoria</h2>
+  <form id="categoria-form">
+    <input type="hidden" id="categoria-id">
+    <label>Nome:</label><input id="categoria-nome" required>
+    <button type="submit">Cadastrar</button>
+  </form>
+  <ul id="categoria-list"></ul>
+</section>
+
+<section>
+  <h2>Baixa</h2>
+  <form id="baixa-form">
+    <input type="hidden" id="baixa-id">
+    <label>Patrimônio (ID):</label><input id="baixa-patrimonioId" required>
+    <label>Motivo:</label><input id="baixa-motivo" required>
+    <label>Data:</label><input type="date" id="baixa-data" required>
+    <button type="submit">Registrar Baixa</button>
+  </form>
+  <ul id="baixa-list"></ul>
+</section>
+
+<section>
+  <h2>Movimentação</h2>
+  <form id="mov-form">
+    <input type="hidden" id="mov-id">
+    <label>Patrimônio (ID):</label><input id="mov-patrimonioId" required>
+    <label>Origem (Local ID):</label><input id="mov-origemId" required>
+    <label>Destino (Local ID):</label><input id="mov-destinoId" required>
+    <label>Data:</label><input type="date" id="mov-data" required>
+    <label>Observação:</label><input id="mov-obs">
+    <button type="submit">Registrar Movimentação</button>
+  </form>
+  <ul id="mov-list"></ul>
+</section>
+
+<div id="popup" class="popup">
+  <div class="popup-content">
+    <p>Tem certeza que deseja excluir?</p>
+    <button id="confirm-delete">Sim</button>
+    <button id="cancel-delete">Não</button>
+  </div>
+</div>
+
+<script src="../js/gerencia-patrimonio.js"></script>
+</body>
+</html>

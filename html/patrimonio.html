@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Patrimônio</title>
+  <link rel="stylesheet" href="../CSS/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Cadastro de Patrimônio</h1>
+    <a href="home.html" style="color:#fff;text-decoration:underline;">← Home</a>
+  </header>
+
+  <section>
+    <h2>Cadastrar / Editar Patrimônio</h2>
+    <form id="patrimonio-form">
+      <input type="hidden" id="patrimonio-id">
+
+      <label for="descricao">Descrição:</label>
+      <input type="text" id="descricao" required>
+
+      <label for="qrCode">QR Code:</label>
+      <input type="text" id="qrCode" placeholder="ex.: ABC123XYZ">
+
+      <label for="tag">Tag:</label>
+      <input type="text" id="tag" placeholder="ex.: TI, MÓVEIS, LAB">
+
+      <label for="status">Status:</label>
+      <input type="text" id="status" placeholder="ex.: ATIVO, INATIVO">
+
+      <label for="dataAquisicao">Data de Aquisição:</label>
+      <input type="date" id="dataAquisicao" required>
+
+      <label for="custo">Custo (R$):</label>
+      <input type="number" id="custo" step="0.01" min="0" required>
+
+      <label for="categoriaId">Categoria (ID):</label>
+      <input type="number" id="categoriaId" min="1" required>
+
+      <label for="localizacaoId">Localização (ID):</label>
+      <input type="number" id="localizacaoId" min="1" required>
+
+      <label for="pessoaResponsavelId">Pessoa Responsável (ID):</label>
+      <input type="number" id="pessoaResponsavelId" min="1" placeholder="opcional">
+
+      <button type="submit">Cadastrar</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Lista de Patrimônios</h2>
+    <ul id="patrimonio-list"></ul>
+  </section>
+
+  <div id="popup" class="popup">
+    <div class="popup-content">
+      <p>Tem certeza que deseja excluir este patrimônio?</p>
+      <button id="confirm-delete">Sim</button>
+      <button id="cancel-delete">Não</button>
+    </div>
+  </div>
+
+  <script src="../js/patrimonio.js"></script>
+</body>
+</html>
