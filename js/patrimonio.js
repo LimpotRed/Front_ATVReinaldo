@@ -1,128 +1,132 @@
-const apiUrl = 'http://localhost:8080/patrimonio';
+const apiPat = 'http://localhost:8080/patrimonio';
 
-function listarPatrimonios() {
-  fetch(apiUrl)
-    .then(r => r.json())
-    .then(data => {
-      const list = document.getElementById('patrimonio-list');
-      list.innerHTML = '';
-      data.forEach(p => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          ID: ${p.id} |
-          Desc: ${p.descricao || '-'} |
-          QR: ${p.qrCode || '-'} |
-          Tag: ${p.tag || '-'} |
-          Status: ${p.status || '-'} |
-          Data: ${p.dataAquisicao ? String(p.dataAquisicao).slice(0,10) : '-'} |
-          Custo: R$ ${p.custo ?? '-'} |
-          CatID: ${p.categoria?.id ?? '-'} |
-          LocID: ${p.localizacao?.id ?? '-'} |
-          RespID: ${p.pessoaResponsavel?.id ?? '-'}
-          <select onchange="handleAction(event, ${p.id})">
+const $ = (id) => document.getElementById(id);
+const getEl = (ids) => ids.map($).find(Boolean) || null;
+const getVal = (ids) => (getEl(ids)?.value ?? '').trim();
+
+function safeJson(r) { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }
+function toStr(v) { return (v === null || v === undefined || v === '') ? '-' : String(v); }
+function toMoney(v) { if (v === '' || v == null) return '-'; const n = Number(v); return isNaN(n) ? toStr(v) : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+function dateToInput(v) { return v ? String(v).slice(0, 10) : ''; }
+
+function getPatrimonio() {
+  fetch(apiPat).then(safeJson).then(list => {
+    const ul = getEl(['btnListaPatrimonios', 'patrimonio-list']);
+    if (!ul) return;
+    ul.innerHTML = '';
+    (Array.isArray(list) ? list : []).forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="patr-line"><strong>Descrição:</strong> <span>${toStr(p.descricao)}</span></div>
+        <div class="patr-line"><strong>QR Code:</strong> <span>${toStr(p.qrCode)}</span></div>
+        <div class="patr-line"><strong>Tag:</strong> <span>${toStr(p.tag)}</span></div>
+        <div class="patr-line"><strong>Status:</strong> <span>${toStr(p.status)}</span></div>
+        <div class="patr-line"><strong>Data Aquisição:</strong> <span>${toStr(p.dataAquisicao)}</span></div>
+        <div class="patr-line"><strong>Custo:</strong> <span>${toMoney(p.custo)}</span></div>
+        <div class="patr-line"><strong>Categoria ID:</strong> <span>${toStr(p.categoriaId)}</span></div>
+        <div class="patr-line"><strong>Localização ID:</strong> <span>${toStr(p.localizacaoId)}</span></div>
+        <div class="patr-line"><strong>Responsável ID:</strong> <span>${toStr(p.pessoaResponsavelId)}</span></div>
+        <div class="patr-actions">
+          <select onchange="handleSelectActionPatrimonio(event, ${p.id})">
             <option value="">Ação</option>
             <option value="editar">Editar</option>
             <option value="excluir">Excluir</option>
           </select>
-        `;
-        list.appendChild(li);
-      });
-    })
-    .catch(err => console.error('Erro ao listar patrimônios:', err));
-}
-
-function salvarPatrimonio(e) {
-  e.preventDefault();
-  const id = document.getElementById('patrimonio-id').value;
-
-  const dataInput = document.getElementById('dataAquisicao').value;
-  const dataISO = dataInput && dataInput.length >= 10
-    ? dataInput
-    : new Date().toISOString().slice(0,10);
-
-  const categoriaId = Number(document.getElementById('categoriaId').value);
-  const localizacaoId = Number(document.getElementById('localizacaoId').value);
-  const pessoaResponsavelIdRaw = document.getElementById('pessoaResponsavelId').value;
-  const pessoaResponsavelId = pessoaResponsavelIdRaw ? Number(pessoaResponsavelIdRaw) : null;
-
-  const payload = {
-    descricao: document.getElementById('descricao').value,
-    qrcode: document.getElementById('qrCode').value,
-    tag: document.getElementById('tag').value,
-    status: document.getElementById('status').value,
-    dataAquisicao: dataISO,
-    custo: document.getElementById('custo').value ? Number(document.getElementById('custo').value) : 0,
-    categoria:   { id: categoriaId },
-    localizacao: { id: localizacaoId },
-    // se tiver relação com Pessoa:
-    pessoaResponsavel: pessoaResponsavelId ? { id: pessoaResponsavelId } : null
-  };
-
-  const method = id ? 'PUT' : 'POST';
-  const body = id ? { ...payload, id: Number(id) } : payload;
-
-  fetch(apiUrl, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  })
-  .then(async resp => {
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(`Erro ${resp.status}: ${txt}`);
-    }
-    return resp.json().catch(() => ({}));
-  })
-  .then(() => {
-    listarPatrimonios();
-    e.target.reset();
-    document.getElementById('patrimonio-id').value = '';
-    document.querySelector('#patrimonio-form button').textContent = 'Cadastrar';
-  })
-  .catch(err => {
-    console.error('Falha ao salvar patrimônio:', err);
-    alert('Erro ao salvar patrimônio. Veja o console para detalhes.');
+        </div>`;
+      ul.appendChild(li);
+    });
+    if (!ul.children.length) ul.innerHTML = '<li>Nenhum patrimônio cadastrado.</li>';
+  }).catch(err => {
+    console.error('Erro ao listar patrimônios:', err);
+    const ul = getEl(['btnListaPatrimonios', 'patrimonio-list']);
+    if (ul) ul.innerHTML = '<li>Não foi possível carregar os patrimônios.</li>';
   });
 }
 
-function handleAction(e, id) {
-  const action = e.target.value;
+async function createOrUpdatePatrimonio(e) {
+  e.preventDefault();
 
-  if (action === 'editar') {
-    fetch(apiUrl)
-      .then(r => r.json())
-      .then(data => {
-        const item = data.find(i => i.id === id);
-        if (!item) return alert('Patrimônio não encontrado!');
+  const id = getVal(['btnIdPatrimonio', 'patrimonio-id']);
 
-        document.getElementById('descricao').value = item.descricao || '';
-        document.getElementById('qrCode').value = item.qrCode || '';
-        document.getElementById('tag').value = item.tag || '';
-        document.getElementById('status').value = item.status || '';
-        document.getElementById('dataAquisicao').value = item.dataAquisicao ? String(item.dataAquisicao).slice(0,10) : '';
-        document.getElementById('custo').value = item.custo ?? '';
-        document.getElementById('categoriaId').value = item.categoria?.id ?? '';
-        document.getElementById('localizacaoId').value = item.localizacao?.id ?? '';
-        document.getElementById('pessoaResponsavelId').value = item.pessoaResponsavel?.id ?? '';
+  const payload = {
+    descricao: getVal(['btnCampoDescricaoPatrimonio', 'descricao']),
+    qrCode: getVal(['btnCampoQrCodePatrimonio', 'qrCode']),
+    tag: getVal(['btnCampoTagPatrimonio', 'tag']),
+    status: getVal(['btnCampoStatusPatrimonio', 'status']),
+    dataAquisicao: getVal(['btnCampoDataAquisicaoPatrimonio', 'dataAquisicao']),
+    custo: (() => {
+      const v = getVal(['btnCampoCustoPatrimonio', 'custo']);
+      return v === '' ? null : Number(v);
+    })(),
+    categoriaId: (() => {
+      const v = getVal(['btnCampoCategoriaIdPatrimonio', 'categoriaId']);
+      return v === '' ? null : Number(v);
+    })(),
+    localizacaoId: (() => {
+      const v = getVal(['btnCampoLocalizacaoIdPatrimonio', 'localizacaoId']);
+      return v === '' ? null : Number(v);
+    })(),
+    pessoaResponsavelId: (() => {
+      const v = getVal(['btnCampoPessoaResponsavelIdPatrimonio', 'pessoaResponsavelId']);
+      return v === '' ? null : Number(v);
+    })()
+  };
 
-        document.getElementById('patrimonio-id').value = id;
-        document.querySelector('#patrimonio-form button').textContent = 'Salvar Edição';
-      });
+  const isEdit = !!id;
+  const resp = await fetch(apiPat, {
+    method: isEdit ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(isEdit ? { ...payload, id: Number(id) } : payload)
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => '');
+    console.error('Resposta do servidor:', resp.status, txt);
+    alert('Não foi possível salvar o patrimônio.');
+    return;
   }
 
-  if (action === 'excluir') {
-    const popup = document.getElementById('popup');
-    const confirmDelete = document.getElementById('confirm-delete');
-    const cancelDelete  = document.getElementById('cancel-delete');
+  const form = getEl(['btnFormPatrimonio', 'patrimonio-form']);
+  form?.reset();
+  (getEl(['btnIdPatrimonio', 'patrimonio-id']) || {}).value = '';
+  const btn = form?.querySelector('button[type="submit"]'); if (btn) btn.textContent = 'Cadastrar';
+  getPatrimonio();
+}
 
-    popup.style.display = 'flex';
-    confirmDelete.onclick = () => {
-      fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
-        .then(() => { listarPatrimonios(); popup.style.display = 'none'; });
-    };
-    cancelDelete.onclick = () => popup.style.display = 'none';
+function handleSelectActionPatrimonio(ev, id) {
+  const action = ev.target.value;
+  if (action === 'editar') {
+    fetch(apiPat).then(r => r.json()).then(list => {
+      const p = list.find(x => String(x.id) === String(id));
+      if (!p) return alert('Patrimônio não encontrado');
+      (getEl(['btnIdPatrimonio', 'patrimonio-id']) || {}).value = p.id ?? '';
+      (getEl(['btnCampoDescricaoPatrimonio', 'descricao']) || {}).value = p.descricao ?? '';
+      (getEl(['btnCampoQrCodePatrimonio', 'qrCode']) || {}).value = p.qrCode ?? '';
+      (getEl(['btnCampoTagPatrimonio', 'tag']) || {}).value = p.tag ?? '';
+      (getEl(['btnCampoStatusPatrimonio', 'status']) || {}).value = p.status ?? '';
+      (getEl(['btnCampoDataAquisicaoPatrimonio', 'dataAquisicao']) || {}).value = dateToInput(p.dataAquisicao);
+      (getEl(['btnCampoCustoPatrimonio', 'custo']) || {}).value = p.custo ?? '';
+      (getEl(['btnCampoCategoriaIdPatrimonio', 'categoriaId']) || {}).value = p.categoriaId ?? '';
+      (getEl(['btnCampoLocalizacaoIdPatrimonio', 'localizacaoId']) || {}).value = p.localizacaoId ?? '';
+      (getEl(['btnCampoPessoaResponsavelIdPatrimonio', 'pessoaResponsavelId']) || {}).value = p.pessoaResponsavelId ?? '';
+      const form = getEl(['btnFormPatrimonio', 'patrimonio-form']);
+      const btn = form?.querySelector('button[type="submit"]'); if (btn) btn.textContent = 'Salvar Edição';
+    }).finally(() => { ev.target.value = ''; });
+  }
+  if (action === 'excluir') {
+    const popup = $('popup'); popup.style.display = 'flex';
+    const ok = $('btnConfirmarExclusao') || $('confirm-delete');
+    const cancel = $('btnCancelarExclusao') || $('cancel-delete');
+    ok.onclick = () => { deletePatrimonio(id); popup.style.display = 'none'; ev.target.value = ''; };
+    cancel.onclick = () => popup.style.display = 'none';
   }
 }
 
-window.onload = listarPatrimonios;
-document.getElementById('patrimonio-form').addEventListener('submit', salvarPatrimonio);
+function deletePatrimonio(id) {
+  fetch(`${apiPat}/${id}`, { method: 'DELETE' })
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); getPatrimonio(); })
+    .catch(err => { console.error('Erro ao excluir patrimônio:', err); alert('Não foi possível excluir.'); });
+}
+
+window.onload = getPatrimonio;
+(getEl(['btnFormPatrimonio', 'patrimonio-form']) || {}).addEventListener?.('submit', createOrUpdatePatrimonio);

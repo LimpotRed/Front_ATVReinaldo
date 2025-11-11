@@ -1,61 +1,247 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gerência de Patrimônio</title>
-  <link rel="stylesheet" href="../CSS/styles.css">
+  <link rel="stylesheet" href="../CSS/styles.css" />
+
+  <style>
+    body {
+      background: #f5f5f5;
+    }
+
+    .gp-wrap {
+      max-width: 1500px;
+      margin: 40px auto;
+      padding: 0 40px;
+    }
+
+    .gp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: start;
+      justify-content: center;
+    }
+
+    .gp-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px 40px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+      transition: transform .2s ease;
+    }
+
+    .gp-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .gp-card h2 {
+      margin-top: 0;
+      font-size: 1.6rem;
+      color: #222;
+      border-bottom: 2px solid #2b7a2b;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .gp-card label {
+      display: block;
+      font-weight: 600;
+      margin-top: 12px;
+      color: #333;
+    }
+
+    .gp-card input,
+    .gp-card select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      margin-top: 4px;
+    }
+
+    .gp-card button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 6px;
+      background: #3aa63a;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background .3s ease;
+    }
+
+    .gp-card button:hover {
+      background: #2f8e2f;
+    }
+
+    /* Listas verticais */
+    #movimentacao-list,
+    #baixa-list,
+    #patrimonio-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    #movimentacao-list li,
+    #baixa-list li,
+    #patrimonio-list li {
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 12px 0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+      display: grid;
+      gap: 6px;
+    }
+
+    .mov-line,
+    .baixa-line,
+    .patrimonio-line {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+    }
+
+    .mov-line strong,
+    .baixa-line strong,
+    .patrimonio-line strong {
+      min-width: 160px;
+      color: #333;
+    }
+
+    /* card em largura total (para "Patrimônios Cadastrados") */
+    .gp-col-2 {
+      grid-column: 1 / span 2;
+    }
+
+    @media (max-width:1000px) {
+      .gp-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .gp-card {
+        padding: 28px;
+      }
+
+      .mov-line strong,
+      .baixa-line strong,
+      .patrimonio-line strong {
+        min-width: 120px;
+      }
+
+      .gp-col-2 {
+        grid-column: auto;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<header>
-  <h1>Gerência de Patrimônio</h1>
-  <a href="home.html" style="color:#fff;text-decoration:underline;">← Home</a>
-</header>
 
-<section>
-  <h2>Categoria</h2>
-  <form id="categoria-form">
-    <input type="hidden" id="categoria-id">
-    <label>Nome:</label><input id="categoria-nome" required>
-    <button type="submit">Cadastrar</button>
-  </form>
-  <ul id="categoria-list"></ul>
-</section>
+  <!-- NAVBAR GLASS -->
+  <header class="gp-navbar">
+    <a class="gp-back-btn" href="home.html" aria-label="Voltar" title="Voltar">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+      </svg>
+    </a>
+    <h1 class="gp-title">Gerência de Patrimônio</h1>
+    <div class="gp-spacer" aria-hidden="true"></div>
+  </header>
 
-<section>
-  <h2>Baixa</h2>
-  <form id="baixa-form">
-    <input type="hidden" id="baixa-id">
-    <label>Patrimônio (ID):</label><input id="baixa-patrimonioId" required>
-    <label>Motivo:</label><input id="baixa-motivo" required>
-    <label>Data:</label><input type="date" id="baixa-data" required>
-    <button type="submit">Registrar Baixa</button>
-  </form>
-  <ul id="baixa-list"></ul>
-</section>
+  <div class="gp-wrap">
+    <div class="gp-grid">
 
-<section>
-  <h2>Movimentação</h2>
-  <form id="mov-form">
-    <input type="hidden" id="mov-id">
-    <label>Patrimônio (ID):</label><input id="mov-patrimonioId" required>
-    <label>Origem (Local ID):</label><input id="mov-origemId" required>
-    <label>Destino (Local ID):</label><input id="mov-destinoId" required>
-    <label>Data:</label><input type="date" id="mov-data" required>
-    <label>Observação:</label><input id="mov-obs">
-    <button type="submit">Registrar Movimentação</button>
-  </form>
-  <ul id="mov-list"></ul>
-</section>
+      <!-- (1) FORM Movimentação (mantém seus IDs atuais do formulário) -->
+      <section class="gp-card">
+        <h2>Movimentação</h2>
+        <form id="movimentacao-form">
+          <!-- mantenha seus inputs originais (IDs existentes) -->
+          <label for="mov-patrimonioId">Patrimônio ID:</label>
+          <input type="number" id="mov-patrimonioId" placeholder="ex.: 123" required>
 
-<div id="popup" class="popup">
-  <div class="popup-content">
-    <p>Tem certeza que deseja excluir?</p>
-    <button id="confirm-delete">Sim</button>
-    <button id="cancel-delete">Não</button>
+          <label for="mov-origem">Local Origem (ID):</label>
+          <input type="number" id="mov-origem" placeholder="ex.: 1">
+
+          <label for="mov-destino">Local Destino (ID):</label>
+          <input type="number" id="mov-destino" placeholder="ex.: 2">
+
+          <label for="mov-data">Data da Movimentação:</label>
+          <input type="date" id="mov-data">
+
+          <label for="mov-obs">Observação:</label>
+          <input type="text" id="mov-obs" placeholder="opcional">
+
+          <button type="submit">Registrar Movimentação</button>
+        </form>
+      </section>
+
+      <!-- (2) FORM Baixa (mantém seus IDs atuais do formulário) -->
+      <section class="gp-card">
+        <h2>Baixa</h2>
+        <form id="baixa-form">
+          <!-- mantenha seus inputs originais (IDs existentes) -->
+          <label for="bx-patrimonioId">Patrimônio ID:</label>
+          <input type="number" id="bx-patrimonioId" placeholder="ex.: 123" required>
+
+          <label for="bx-data">Data da Baixa:</label>
+          <input type="date" id="bx-data">
+
+          <label for="bx-motivo">Motivo:</label>
+          <input type="text" id="bx-motivo" placeholder="ex.: sucateamento">
+
+          <label for="bx-obs">Observação:</label>
+          <input type="text" id="bx-obs" placeholder="opcional">
+
+          <label for="bx-valor">Valor Recuperado (R$):</label>
+          <input type="number" id="bx-valor" step="0.01" min="0" placeholder="opcional">
+
+          <button type="submit">Registrar Baixa</button>
+        </form>
+      </section>
+
+      <!-- (3) LISTA Movimentações -->
+      <section class="gp-card">
+        <h2>Movimentações Registradas</h2>
+        <ul id="movimentacao-list"></ul>
+      </section>
+
+      <!-- (4) LISTA Baixas -->
+      <section class="gp-card">
+        <h2>Baixas Registradas</h2>
+        <ul id="baixa-list"></ul>
+      </section>
+
+      <!-- (5) LISTA Patrimônios (que você já tinha pedido antes) -->
+      <section class="gp-card gp-col-2">
+        <h2>Patrimônios Cadastrados</h2>
+        <ul id="patrimonio-list"></ul>
+      </section>
+
+    </div>
   </div>
-</div>
 
-<script src="../js/gerencia-patrimonio.js"></script>
+  <!-- Popup de confirmação (reaproveitado) -->
+  <div id="popup" class="popup">
+    <div class="popup-content">
+      <p>Tem certeza que deseja excluir?</p>
+      <button id="confirm-delete">Sim</button>
+      <button id="cancel-delete">Não</button>
+    </div>
+  </div>
+
+  <script src="../js/gerencia-patrimonio.js"></script>
 </body>
+
 </html>

@@ -1,88 +1,93 @@
-const apiUrl = 'http://localhost:8080/localizacao';
+const apiLoc = 'http://localhost:8080/localizacao';
 
-const form = document.getElementById('local-form');
-const list = document.getElementById('local-list');
+const $ = (id) => document.getElementById(id);
+const getEl = (ids) => ids.map($).find(Boolean) || null;
+const getVal = (ids) => (getEl(ids)?.value ?? '').trim();
 
-const idInput   = document.getElementById('local-id');
-const nomeInput = document.getElementById('local-nome');  // <- usar o id do HTML
-const descInput = document.getElementById('local-desc');  // <- usar o id do HTML
-const submitBtn = form.querySelector('button');
+function safeJson(r) { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }
+function toStr(v) { return (v === null || v === undefined || v === '') ? '-' : String(v); }
 
-function listarLocalizacoes() {
-  fetch(apiUrl)
-    .then(r => r.json())
-    .then(data => {
-      list.innerHTML = '';
-      data.forEach(l => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          ID: ${l.id} | Nome: ${l.nome} | Desc: ${l.descricao || '-'}
-          <select onchange="handleAction(event, ${l.id})">
+function getLocalizacao() {
+  fetch(apiLoc).then(safeJson).then(data => {
+    const ul = getEl(['btnListaLocalizacoes', 'localizacao-list']);
+    if (!ul) return;
+    ul.innerHTML = '';
+    (Array.isArray(data) ? data : []).forEach(loc => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="loc-line"><strong>Nome:</strong> <span>${toStr(loc.nome)}</span></div>
+        <div class="loc-line"><strong>Descrição:</strong> <span>${toStr(loc.descricao)}</span></div>
+        <div class="loc-actions">
+          <select onchange="handleSelectLocalizacao(event, ${loc.id})">
             <option value="">Ação</option>
             <option value="editar">Editar</option>
             <option value="excluir">Excluir</option>
           </select>
-        `;
-        list.appendChild(li);
-      });
+        </div>`;
+      ul.appendChild(li);
     });
+    if (!ul.children.length) ul.innerHTML = '<li>Nenhuma localização cadastrada.</li>';
+  }).catch(err => {
+    console.error('Erro ao listar localizações:', err);
+    const ul = getEl(['btnListaLocalizacoes', 'localizacao-list']);
+    if (ul) ul.innerHTML = '<li>Erro ao carregar localizações.</li>';
+  });
 }
 
-function salvarLocalizacao(e) {
+async function createOrUpdateLocalizacao(e) {
   e.preventDefault();
-  const id = idInput.value;
+  const id = getVal(['btnIdLocalizacao', 'localizacao-id']);
+  const nome = getVal(['btnCampoNomeLocalizacao', 'nome']);
+  const descricao = getVal(['btnCampoDescricaoLocalizacao', 'descricao']);
 
-  const payload = {
-    nome: nomeInput.value,
-    descricao: descInput.value
-  };
-
-  const method = id ? 'PUT' : 'POST';
-  const body = id ? { ...payload, id: Number(id) } : payload;
-
-  fetch(apiUrl, {
-    method,
+  const isEdit = !!id;
+  const resp = await fetch(apiLoc, {
+    method: isEdit ? 'PUT' : 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  })
-  .then(() => {
-    listarLocalizacoes();
-    form.reset();
-    idInput.value = '';
-    submitBtn.textContent = 'Cadastrar';
-  })
-  .catch(err => console.error('Erro ao salvar localização:', err));
+    body: JSON.stringify(isEdit ? { id: Number(id), nome, descricao } : { nome, descricao })
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => '');
+    console.error('Resposta do servidor:', resp.status, txt);
+    alert('Não foi possível salvar a localização.');
+    return;
+  }
+
+  const form = getEl(['btnFormLocalizacao', 'localizacao-form']);
+  form?.reset();
+  (getEl(['btnIdLocalizacao', 'localizacao-id']) || {}).value = '';
+  const btn = form?.querySelector('button[type="submit"]'); if (btn) btn.textContent = 'Cadastrar';
+  getLocalizacao();
 }
 
-function handleAction(e, id) {
-  const action = e.target.value;
-
+function handleSelectLocalizacao(ev, id) {
+  const action = ev.target.value;
   if (action === 'editar') {
-    fetch(apiUrl)
-      .then(r => r.json())
-      .then(data => {
-        const item = data.find(i => i.id === id);
-        if (!item) return alert('Localização não encontrada!');
-        idInput.value   = item.id;
-        nomeInput.value = item.nome || '';
-        descInput.value = item.descricao || '';
-        submitBtn.textContent = 'Salvar Edição';
-      });
+    fetch(apiLoc).then(r => r.json()).then(list => {
+      const loc = list.find(x => String(x.id) === String(id));
+      if (!loc) return alert('Localização não encontrada');
+      (getEl(['btnIdLocalizacao', 'localizacao-id']) || {}).value = loc.id ?? '';
+      (getEl(['btnCampoNomeLocalizacao', 'nome']) || {}).value = loc.nome ?? '';
+      (getEl(['btnCampoDescricaoLocalizacao', 'descricao']) || {}).value = loc.descricao ?? '';
+      const form = getEl(['btnFormLocalizacao', 'localizacao-form']);
+      const btn = form?.querySelector('button[type="submit"]'); if (btn) btn.textContent = 'Salvar Edição';
+    }).finally(() => { ev.target.value = ''; });
   }
-
   if (action === 'excluir') {
-    const popup = document.getElementById('popup');
-    const confirmDelete = document.getElementById('confirm-delete');
-    const cancelDelete  = document.getElementById('cancel-delete');
-
-    popup.style.display = 'flex';
-    confirmDelete.onclick = () => {
-      fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
-        .then(() => { listarLocalizacoes(); popup.style.display = 'none'; });
-    };
-    cancelDelete.onclick = () => popup.style.display = 'none';
+    const popup = $('popup'); popup.style.display = 'flex';
+    const ok = $('btnConfirmarExclusao') || $('confirm-delete');
+    const cancel = $('btnCancelarExclusao') || $('cancel-delete');
+    ok.onclick = () => { deleteLocalizacao(id); popup.style.display = 'none'; ev.target.value = ''; };
+    cancel.onclick = () => popup.style.display = 'none';
   }
 }
 
-document.addEventListener('DOMContentLoaded', listarLocalizacoes);
-form.addEventListener('submit', salvarLocalizacao);
+function deleteLocalizacao(id) {
+  fetch(`${apiLoc}/${id}`, { method: 'DELETE' })
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); getLocalizacao(); })
+    .catch(err => { console.error('Erro ao excluir local:', err); alert('Não foi possível excluir.'); });
+}
+
+window.onload = getLocalizacao;
+(getEl(['btnFormLocalizacao', 'localizacao-form']) || {}).addEventListener?.('submit', createOrUpdateLocalizacao);
