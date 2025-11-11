@@ -47,7 +47,7 @@ function salvarPatrimonio(e) {
 
   const payload = {
     descricao: document.getElementById('descricao').value,
-    qrCode: document.getElementById('qrCode').value,
+    qrcode: document.getElementById('qrCode').value,
     tag: document.getElementById('tag').value,
     status: document.getElementById('status').value,
     dataAquisicao: dataISO,
